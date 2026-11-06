@@ -1,1 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <title>Asbily Controller — Backend & API Management</title>
+
+  <meta name="description" content="Asbily Controller is the central backend and API management platform by Asbily Platforms.">
+
+  <meta name="theme-color" content="#000000">
+
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="container header-content">
+
+      <a href="/" class="brand">
+        <img src="/assets/logo.svg" alt="Asbily Logo">
+        <span>Asbily <strong>Controller</strong></span>
+      </a>
+
+      <button
+        class="menu-toggle"
+        id="menuToggle"
+        aria-label="Toggle navigation"
+        aria-expanded="false"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <nav class="navigation" id="navigation">
+        <a href="#overview">Overview</a>
+        <a href="#services">Services</a>
+        <a href="#apis">APIs</a>
+        <a href="#about">About</a>
+      </nav>
+
+    </div>
+  </header>
+
+
+  <!-- Main -->
+  <main>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container">
+
+        <div class="hero-content">
+
+          <span class="eyebrow">
+            ASBILY PLATFORMS
+          </span>
+
+          <h1>
+            Central Backend
+            <span>& API Controller.</span>
+          </h1>
+
+          <p>
+            One central platform to manage, monitor and
+            connect Asbily backend services and APIs.
+          </p>
+
+          <div class="hero-actions">
+            <a href="#overview" class="btn btn-primary">
+              Explore Controller
+            </a>
+
+            <a href="#services" class="btn btn-secondary">
+              View Services
+            </a>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- Overview -->
+    <section class="section" id="overview">
+      <div class="container">
+
+        <div class="section-heading">
+          <span class="eyebrow">OVERVIEW</span>
+          <h2>Controller Overview</h2>
+          <p>
+            Manage the central infrastructure of Asbily
+            from one dashboard.
+          </p>
+        </div>
+
+        <div class="overview-grid">
+
+          <article class="overview-card">
+            <span class="card-label">Platform</span>
+            <h3>Asbily Controller</h3>
+            <p>Central backend and API management.</p>
+          </article>
+
+          <article class="overview-card">
+            <span class="card-label">Runtime</span>
+            <h3>Node.js</h3>
+            <p>Native Node.js backend architecture.</p>
+          </article>
+
+          <article class="overview-card">
+            <span class="card-label">Hosting</span>
+            <h3>Vercel</h3>
+            <p>Deployment and serverless API hosting.</p>
+          </article>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- Services -->
+    <section class="section section-gray" id="services">
+      <div class="container">
+
+        <div class="section-heading">
+          <span class="eyebrow">SERVICES</span>
+          <h2>Backend Services</h2>
+          <p>
+            Centralized access to Asbily platform services.
+          </p>
+        </div>
+
+        <div class="service-grid">
+
+          <a href="/backend/" class="service-card">
+            <span class="service-icon">01</span>
+            <h3>Backend</h3>
+            <p>Backend services and management.</p>
+            <span class="service-link">Explore →</span>
+          </a>
+
+          <a href="/api/" class="service-card" id="apis">
+            <span class="service-icon">02</span>
+            <h3>Public API</h3>
+            <p>API endpoints and integrations.</p>
+            <span class="service-link">Explore →</span>
+          </a>
+
+          <a href="/firebase/" class="service-card">
+            <span class="service-icon">03</span>
+            <h3>Firebase</h3>
+            <p>Firebase services integration.</p>
+            <span class="service-link">Explore →</span>
+          </a>
+
+          <a href="/google-cloud/" class="service-card">
+            <span class="service-icon">04</span>
+            <h3>Google Cloud</h3>
+            <p>Google Cloud service integration.</p>
+            <span class="service-link">Explore →</span>
+          </a>
+
+          <a href="/api/lemon-squeezy" class="service-card">
+            <span class="service-icon">05</span>
+            <h3>Lemon Squeezy</h3>
+            <p>Payment API and webhook integration.</p>
+            <span class="service-link">Explore →</span>
+          </a>
+
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- About -->
+    <section class="section" id="about">
+      <div class="container about-content">
+
+        <span class="eyebrow">ABOUT ASBILY</span>
+
+        <h2>
+          One Controller.
+          <span>Connected Services.</span>
+        </h2>
+
+        <p>
+          Asbily Controller is the central backend and
+          API management platform developed by
+          Asbily Platforms.
+        </p>
+
+        <a href="https://asbily.com" class="text-link">
+          Visit Asbily →
+        </a>
+
+      </div>
+    </section>
+
+  </main>
+
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-content">
+
+      <div>
+        <strong>Asbily Controller</strong>
+        <p>Backend & API Management Platform</p>
+      </div>
+
+      <div class="footer-links">
+        <a href="https://asbily.com">Asbily</a>
+        <a href="https://docs.asbily.com">Documentation</a>
+        <a href="https://support.asbily.com">Support</a>
+      </div>
+
+      <p class="copyright">
+        © <span id="currentYear"></span> Asbily Platforms.
+        All rights reserved.
+      </p>
+
+    </div>
+  </footer>
+
+
+  <script src="/script.js" defer></script>
+
+</body>
+  </html>
