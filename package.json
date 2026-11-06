@@ -3,10 +3,5 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Asbily Central Backend and API Controller",
-  "main": "index.js",
-  "scripts": {},
-  "engines": {
-    "node": ">=20"
-  }
+  "description": "Asbily Central Backend and API Controller"
 }
