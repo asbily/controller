@@ -1,6 +1,10 @@
 "use strict";
 
-import { getProcessEnvSummary, maskSecret } from "../config/env.js";
+import {
+  discoverRuntimeEnvironment,
+  isRestrictedInternalEnv,
+  maskSecret
+} from "../config/env.js";
 import {
   forwardToProvider,
   matchRouteRule,
@@ -19,7 +23,7 @@ import { stateStore } from "../store/stateStore.js";
 import { getClientIp, sendError, sendJSON } from "../utils/http.js";
 
 const VALID_PROVIDER_TYPES = new Set(["vercel", "railway", "render", "custom"]);
-const VALID_SCOPES = new Set(["gateway", "vercel", "railway", "render", "shared", "firebase", "storage", "payments"]);
+const VALID_SCOPES = new Set(["gateway", "vercel", "railway", "render", "shared", "firebase", "storage", "payments", "platform", "database", "custom"]);
 
 export async function handleControllerRoutes(req, res, url, context) {
   const { pathname } = url;
@@ -357,13 +361,21 @@ export async function handleControllerRoutes(req, res, url, context) {
   }
 
   // ==========================================
-  // Environment Variables & Secrets Vault
+  // Environment Variables Discovery & Secrets Vault
   // ==========================================
   if (pathname === "/api/controller/env") {
     if (method === "GET") {
+      const actor = requireRole(req, res, "admin");
+      if (!actor) return;
+
+      const discovered = discoverRuntimeEnvironment(stateStore.state.trackedEnvVars);
       return sendJSON(res, 200, {
         success: true,
-        environmentVars: getProcessEnvSummary(),
+        runtime: discovered.runtime,
+        summary: discovered.summary,
+        systemVariables: discovered.systemVariables,
+        userVariables: discovered.userVariables,
+        trackedVars: stateStore.state.trackedEnvVars,
         vaultVars: stateStore.state.envVars.map((v) => stateStore.toPublicEnvVar(v))
       });
     }
@@ -443,6 +455,90 @@ export async function handleControllerRoutes(req, res, url, context) {
         envVar: stateStore.toPublicEnvVar(created)
       });
     }
+  }
+
+  if (pathname === "/api/controller/env/tracked" && method === "POST") {
+    const actor = requireRole(req, res, "admin");
+    if (!actor) return;
+
+    const body = await readJsonBody(req);
+    const key = String(body.key || "").trim().toUpperCase();
+    const scope = String(body.scope || "custom").trim().toLowerCase();
+    const isSecret = body.isSecret !== false;
+
+    if (!isValidEnvKey(key)) {
+      return sendError(
+        res,
+        400,
+        "Variable name must be uppercase alphanumeric with underscores (e.g. CUSTOM_API_URL).",
+        "INVALID_ENV_KEY"
+      );
+    }
+    if (isRestrictedInternalEnv(key)) {
+      return sendError(
+        res,
+        400,
+        "Internal credential, password, token, private key, or signing secret names cannot be registered for display.",
+        "RESTRICTED_ENV_KEY"
+      );
+    }
+    if (!VALID_SCOPES.has(scope)) {
+      return sendError(res, 400, "Invalid environment scope.", "INVALID_SCOPE");
+    }
+
+    const existing = stateStore.state.trackedEnvVars.find((v) => v.key === key);
+    const now = new Date().toISOString();
+    if (existing) {
+      existing.scope = scope;
+      existing.isSecret = isSecret;
+      existing.updatedAt = now;
+    } else {
+      stateStore.state.trackedEnvVars.push({
+        key,
+        scope,
+        isSecret,
+        createdAt: now,
+        updatedAt: now
+      });
+    }
+
+    stateStore.recordAudit({
+      actorEmail: actor.email,
+      actorRole: actor.role,
+      action: "ENV_TRACKED_SAVED",
+      target: key,
+      outcome: "success",
+      ip
+    });
+    await stateStore.persist();
+
+    return sendJSON(res, existing ? 200 : 201, {
+      success: true,
+      trackedVar: existing || stateStore.state.trackedEnvVars.at(-1)
+    });
+  }
+
+  if (pathname.startsWith("/api/controller/env/tracked/") && method === "DELETE") {
+    const actor = requireRole(req, res, "admin");
+    if (!actor) return;
+    const key = decodeURIComponent(pathname.split("/")[5] || "").toUpperCase();
+    const exists = stateStore.state.trackedEnvVars.some((v) => v.key === key);
+    if (!exists) {
+      return sendError(res, 404, "Tracked variable name not found.", "NOT_FOUND");
+    }
+    stateStore.state.trackedEnvVars = stateStore.state.trackedEnvVars.filter(
+      (v) => v.key !== key
+    );
+    stateStore.recordAudit({
+      actorEmail: actor.email,
+      actorRole: actor.role,
+      action: "ENV_TRACKED_DELETED",
+      target: key,
+      outcome: "success",
+      ip
+    });
+    await stateStore.persist();
+    return sendJSON(res, 200, { success: true });
   }
 
   if (pathname.startsWith("/api/controller/env/") && method === "DELETE") {

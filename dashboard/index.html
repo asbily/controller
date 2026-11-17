@@ -255,14 +255,94 @@
         <section class="panel-section" id="section-env">
           <div class="section-header">
             <div>
-              <span class="eyebrow">SECRETS & CONFIG</span>
+              <span class="eyebrow">RUNTIME DISCOVERY & VAULT</span>
               <h1>Environment Variables</h1>
             </div>
           </div>
 
           <div class="card">
+            <div class="card-head">
+              <h2>Runtime Environment Discovery</h2>
+              <span class="badge" id="envRuntimeBadge">Admin Required</span>
+            </div>
+            <p class="muted-text" id="envIsolationNote">
+              Sign in as an administrator to inspect discovered runtime environment variables from the active Node.js backend. Secret values are always masked; internal credentials, passwords, tokens, private keys, and signing secrets are never displayed.
+            </p>
+            <div class="stats-grid hidden" id="envSummaryGrid"></div>
+          </div>
+
+          <div class="card hidden" id="envAdminContent">
+            <h2>Track Variable Name &amp; Status</h2>
+            <p class="muted-text">Register expected environment variable names to monitor whether they are configured or missing in the current backend runtime without modifying process.env.</p>
+            <form id="trackedEnvForm" class="form-grid">
+              <div class="field">
+                <label for="trackedEnvKey">Variable Name</label>
+                <input id="trackedEnvKey" type="text" placeholder="CUSTOM_WEBHOOK_URL" required>
+              </div>
+              <div class="field">
+                <label for="trackedEnvScope">Scope</label>
+                <select id="trackedEnvScope">
+                  <option value="custom">Custom</option>
+                  <option value="gateway">Cloudflare Gateway</option>
+                  <option value="vercel">Vercel</option>
+                  <option value="railway">Railway</option>
+                  <option value="render">Render</option>
+                  <option value="firebase">Firebase</option>
+                  <option value="storage">Cloudflare R2</option>
+                  <option value="payments">Payments</option>
+                  <option value="database">Database</option>
+                  <option value="platform">Platform</option>
+                </select>
+              </div>
+              <div class="field checkbox-row">
+                <label><input type="checkbox" id="trackedEnvSecret" checked> Treat as Secret (Mask Value)</label>
+              </div>
+              <div class="field-actions">
+                <button class="btn btn-primary" type="submit">Track Variable Name</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="card hidden" id="userEnvCard">
+            <h2>User-Configured Variables</h2>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Key</th>
+                    <th>Scope</th>
+                    <th>Status</th>
+                    <th>Value Preview</th>
+                    <th>Source</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="userEnvTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card hidden" id="systemEnvCard">
+            <h2>System-Managed Runtime Variables</h2>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Key</th>
+                    <th>Scope</th>
+                    <th>Status</th>
+                    <th>Value Preview</th>
+                    <th>Source</th>
+                  </tr>
+                </thead>
+                <tbody id="systemEnvTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card hidden" id="vaultEnvFormCard">
             <h2>Add or Update Vault Variable</h2>
-            <p class="muted-text">Secret values are encrypted at rest with AES-256-GCM and always masked in dashboard & API responses.</p>
+            <p class="muted-text">Secret values are encrypted at rest with AES-256-GCM and always masked in dashboard &amp; API responses. Does not overwrite process.env.</p>
             <form id="envForm" class="form-grid">
               <div class="field">
                 <label for="envScope">Scope</label>
@@ -286,7 +366,7 @@
                 <input id="envValue" type="password" autocomplete="new-password" placeholder="Enter value or secret" required>
               </div>
               <div class="field checkbox-row">
-                <label><input type="checkbox" id="envIsSecret" checked> Mark as Secret (Encrypt & Mask)</label>
+                <label><input type="checkbox" id="envIsSecret" checked> Mark as Secret (Encrypt &amp; Mask)</label>
               </div>
               <div class="field-actions">
                 <button class="btn btn-primary" type="submit">Save Variable</button>
@@ -294,7 +374,7 @@
             </form>
           </div>
 
-          <div class="card">
+          <div class="card hidden" id="vaultEnvListCard">
             <h2>Controller Encrypted Vault</h2>
             <div class="table-wrap">
               <table class="data-table">
@@ -309,23 +389,6 @@
                   </tr>
                 </thead>
                 <tbody id="vaultEnvTableBody"></tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="card">
-            <h2>Runtime Environment Bindings</h2>
-            <div class="table-wrap">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Scope</th>
-                    <th>Key</th>
-                    <th>Value Preview</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="processEnvTableBody"></tbody>
               </table>
             </div>
           </div>

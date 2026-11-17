@@ -381,10 +381,122 @@ async function handleDeleteProvider(id) {
 }
 
 async function loadEnvSection() {
-  const data = await apiFetch("/api/controller/env");
+  const badge = document.getElementById("envRuntimeBadge");
+  const note = document.getElementById("envIsolationNote");
+  const summaryGrid = document.getElementById("envSummaryGrid");
+  const adminCards = [
+    "envSummaryGrid",
+    "envAdminContent",
+    "userEnvCard",
+    "systemEnvCard",
+    "vaultEnvFormCard",
+    "vaultEnvListCard"
+  ];
+
+  const isAdmin = state.user && (state.user.role === "admin" || state.user.role === "super_admin");
+  if (!isAdmin) {
+    badge.textContent = "Admin Required";
+    badge.className = "badge";
+    note.textContent =
+      "Sign in as an administrator to inspect discovered runtime environment variables from the active Node.js backend. Secret values are always masked; internal credentials, passwords, tokens, private keys, and signing secrets are never displayed.";
+    adminCards.forEach((id) => document.getElementById(id)?.classList.add("hidden"));
+    return;
+  }
+
+  let data;
+  try {
+    data = await apiFetch("/api/controller/env");
+  } catch (err) {
+    badge.textContent = "Restricted";
+    note.textContent = err.message;
+    adminCards.forEach((id) => document.getElementById(id)?.classList.add("hidden"));
+    return;
+  }
+
+  adminCards.forEach((id) => document.getElementById(id)?.classList.remove("hidden"));
+  badge.textContent = data.runtime.label;
+  badge.className = "badge badge-ok";
+  note.textContent = `${data.runtime.isolationNote} Environment: ${data.runtime.environment}${data.runtime.region ? ` (${data.runtime.region})` : ""}.`;
+
+  summaryGrid.replaceChildren();
+  [
+    ["Visible Variables", String(data.summary.totalVisible)],
+    ["Configured", String(data.summary.configuredCount)],
+    ["Missing", String(data.summary.missingCount)],
+    ["User-Configured", String(data.summary.userCount)],
+    ["System-Managed", String(data.summary.systemCount)]
+  ].forEach(([label, val]) => {
+    const card = el("div", "stat-card");
+    card.append(el("span", "stat-label", label));
+    card.append(el("strong", "stat-value", val));
+    summaryGrid.append(card);
+  });
+
+  // User-configured variables
+  const userBody = document.getElementById("userEnvTableBody");
+  userBody.replaceChildren();
+  for (const e of data.userVariables) {
+    const tr = el("tr");
+    tr.append(el("td", "mono", e.key));
+    tr.append(el("td", "", e.scope));
+    const statusTd = el("td");
+    statusTd.append(
+      el(
+        "span",
+        `badge ${e.configured ? "badge-ok" : ""}`,
+        e.configured ? "Configured" : "Missing"
+      )
+    );
+    tr.append(statusTd);
+    tr.append(el("td", "mono", e.configured ? (e.isSecret ? "••••••••" : e.valuePreview) : "—"));
+    tr.append(el("td", "", e.source));
+    const actTd = el("td");
+    if (e.managed) {
+      const rmBtn = el("button", "btn btn-sm btn-danger", "Untrack");
+      rmBtn.type = "button";
+      rmBtn.addEventListener("click", async () => {
+        try {
+          await apiFetch(`/api/controller/env/tracked/${encodeURIComponent(e.key)}`, {
+            method: "DELETE"
+          });
+          showToast(`Removed tracked key ${e.key}`);
+          await loadEnvSection();
+        } catch (err) {
+          showToast(err.message, "err");
+        }
+      });
+      actTd.append(rmBtn);
+    } else {
+      actTd.append(el("span", "muted-text", "Auto"));
+    }
+    tr.append(actTd);
+    userBody.append(tr);
+  }
+
+  // System-managed variables
+  const sysBody = document.getElementById("systemEnvTableBody");
+  sysBody.replaceChildren();
+  for (const sVar of data.systemVariables) {
+    const tr = el("tr");
+    tr.append(el("td", "mono", sVar.key));
+    tr.append(el("td", "", sVar.scope));
+    const statusTd = el("td");
+    statusTd.append(
+      el(
+        "span",
+        `badge ${sVar.configured ? "badge-ok" : ""}`,
+        sVar.configured ? "Configured" : "Missing"
+      )
+    );
+    tr.append(statusTd);
+    tr.append(el("td", "mono", sVar.configured ? (sVar.isSecret ? "••••••••" : sVar.valuePreview) : "—"));
+    tr.append(el("td", "", sVar.source));
+    sysBody.append(tr);
+  }
+
+  // Vault variables
   const vaultBody = document.getElementById("vaultEnvTableBody");
   vaultBody.replaceChildren();
-
   if (data.vaultVars.length === 0) {
     const tr = el("tr");
     const td = el("td", "muted-text", "No vault variables stored yet.");
@@ -396,7 +508,7 @@ async function loadEnvSection() {
       const tr = el("tr");
       tr.append(el("td", "", v.scope));
       tr.append(el("td", "mono", v.key));
-      tr.append(el("td", "mono", v.valuePreview || "—"));
+      tr.append(el("td", "mono", v.isSecret ? "••••••••" : v.valuePreview || "—"));
       tr.append(el("td", "", v.isSecret ? "Secret" : "Plain"));
       tr.append(el("td", "", new Date(v.updatedAt).toLocaleString()));
       const actTd = el("td");
@@ -415,21 +527,6 @@ async function loadEnvSection() {
       tr.append(actTd);
       vaultBody.append(tr);
     }
-  }
-
-  const procBody = document.getElementById("processEnvTableBody");
-  procBody.replaceChildren();
-  for (const e of data.environmentVars) {
-    const tr = el("tr");
-    tr.append(el("td", "", e.scope));
-    tr.append(el("td", "mono", e.key));
-    tr.append(el("td", "mono", e.configured ? e.valuePreview : "—"));
-    const statusTd = el("td");
-    statusTd.append(
-      el("span", `badge ${e.configured ? "badge-ok" : ""}`, e.configured ? "Configured" : "Unset")
-    );
-    tr.append(statusTd);
-    procBody.append(tr);
   }
 }
 
@@ -774,6 +871,26 @@ function bindForms() {
       }
       document.getElementById("providerFormCard").classList.add("hidden");
       await loadAllData();
+    } catch (err) {
+      showToast(err.message, "err");
+    }
+  });
+
+  document.getElementById("trackedEnvForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      await apiFetch("/api/controller/env/tracked", {
+        method: "POST",
+        body: JSON.stringify({
+          key: document.getElementById("trackedEnvKey").value.trim().toUpperCase(),
+          scope: document.getElementById("trackedEnvScope").value,
+          isSecret: document.getElementById("trackedEnvSecret").checked
+        })
+      });
+      document.getElementById("trackedEnvForm").reset();
+      document.getElementById("trackedEnvSecret").checked = true;
+      showToast("Tracked variable name registered.");
+      await loadEnvSection();
     } catch (err) {
       showToast(err.message, "err");
     }

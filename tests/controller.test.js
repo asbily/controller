@@ -9,6 +9,7 @@ process.env.NODE_ENV = "test";
 
 const { handleRequest } = await import("../src/backend/app.js");
 const { stateStore } = await import("../src/backend/store/stateStore.js");
+const { detectRuntimeProvider } = await import("../src/backend/config/env.js");
 const { validateEvent } = await import("../api/lemon-squeezy/lemon-squeezy.js");
 const workerModule = await import("../worker/src/index.js");
 const worker = workerModule.default;
@@ -135,29 +136,145 @@ test("Asbily Controller Full Integration Suite", async (t) => {
     assert.equal(forbiddenRes.status, 403);
   });
 
-  await t.test("5. Environment secret protection masks secret values", async () => {
-    const secretVal = "sk_test_super_sensitive_998877";
-    const createEnv = await fetch(`${baseUrl}/api/controller/env`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${adminToken}`
-      },
-      body: JSON.stringify({
-        scope: "vercel",
-        key: "VERCEL_TEST_SECRET",
-        value: secretVal,
-        isSecret: true
-      })
-    });
-    assert.equal(createEnv.status, 201);
+  await t.test("5. Environment discovery, RBAC protection, secret masking, and internal credential suppression", async () => {
+    // Unauthenticated and viewer access to /api/controller/env must be blocked
+    const unauthEnv = await fetch(`${baseUrl}/api/controller/env`);
+    assert.equal(unauthEnv.status, 401);
 
-    const listEnv = await fetch(`${baseUrl}/api/controller/env`).then((r) => r.json());
-    const serialized = JSON.stringify(listEnv);
-    assert.equal(serialized.includes(secretVal), false, "Raw secret must NEVER appear in API response");
-    const found = listEnv.vaultVars.find((v) => v.key === "VERCEL_TEST_SECRET");
-    assert.ok(found);
-    assert.ok(found.valuePreview.includes("•"));
+    const viewerEnv = await fetch(`${baseUrl}/api/controller/env`, {
+      headers: { Authorization: `Bearer ${viewerToken}` }
+    });
+    assert.equal(viewerEnv.status, 403);
+
+    // Populate temporary runtime env vars (read-only by controller, restored after test)
+    const prevSecret = process.env.ASBILY_DISCOVERY_API_KEY;
+    const prevPublic = process.env.ASBILY_DISCOVERY_PUBLIC_URL;
+    const prevRestricted = process.env.CUSTOM_SIGNING_SECRET;
+    const prevPassword = process.env.ASBILY_ADMIN_PASSWORD;
+    const secretVal = "sk_test_super_sensitive_998877";
+    const internalSecret = "internal_signing_secret_never_show_xyz";
+    const adminPass = "admin_pass_never_show_xyz";
+
+    process.env.ASBILY_DISCOVERY_API_KEY = secretVal;
+    process.env.ASBILY_DISCOVERY_PUBLIC_URL = "https://controller.asbily.test";
+    process.env.CUSTOM_SIGNING_SECRET = internalSecret;
+    process.env.ASBILY_ADMIN_PASSWORD = adminPass;
+
+    try {
+      const createEnv = await fetch(`${baseUrl}/api/controller/env`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${adminToken}`
+        },
+        body: JSON.stringify({
+          scope: "vercel",
+          key: "VERCEL_TEST_SECRET",
+          value: secretVal,
+          isSecret: true
+        })
+      });
+      assert.equal(createEnv.status, 201);
+
+      // Register custom tracked variable name (non-restricted)
+      const trackRes = await fetch(`${baseUrl}/api/controller/env/tracked`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${adminToken}`
+        },
+        body: JSON.stringify({
+          key: "MISSING_TRACKED_WEBHOOK_URL",
+          scope: "custom",
+          isSecret: false
+        })
+      });
+      assert.equal(trackRes.status, 201);
+
+      // Restricted internal key names must be rejected from tracking
+      const rejectRestricted = await fetch(`${baseUrl}/api/controller/env/tracked`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${adminToken}`
+        },
+        body: JSON.stringify({
+          key: "INTERNAL_PRIVATE_KEY",
+          scope: "custom",
+          isSecret: true
+        })
+      });
+      assert.equal(rejectRestricted.status, 400);
+
+      const listEnv = await fetch(`${baseUrl}/api/controller/env`, {
+        headers: { Authorization: `Bearer ${adminToken}` }
+      }).then((r) => r.json());
+
+      const serialized = JSON.stringify(listEnv);
+      assert.equal(serialized.includes(secretVal), false, "Raw secret must NEVER appear in API response");
+      assert.equal(serialized.includes("998877"), false, "Secret suffix must NEVER appear in API response");
+      assert.equal(serialized.includes(internalSecret), false, "Internal signing secret must NEVER appear");
+      assert.equal(serialized.includes(adminPass), false, "Internal password must NEVER appear");
+      assert.equal(serialized.includes("CUSTOM_SIGNING_SECRET"), false, "Restricted signing secret key must not be displayed");
+      assert.equal(serialized.includes("ASBILY_ADMIN_PASSWORD"), false, "Restricted password key must not be displayed");
+
+      // Verify automatic discovery separated system vs user and found configured/missing statuses
+      assert.ok(listEnv.systemVariables.some((v) => v.key === "NODE_ENV"));
+      const discoveredSecret = listEnv.userVariables.find((v) => v.key === "ASBILY_DISCOVERY_API_KEY");
+      assert.ok(discoveredSecret);
+      assert.equal(discoveredSecret.configured, true);
+      assert.equal(discoveredSecret.isSecret, true);
+      assert.equal(discoveredSecret.valuePreview, "••••••••");
+
+      const discoveredPublic = listEnv.userVariables.find((v) => v.key === "ASBILY_DISCOVERY_PUBLIC_URL");
+      assert.ok(discoveredPublic);
+      assert.equal(discoveredPublic.configured, true);
+      assert.equal(discoveredPublic.valuePreview, "https://controller.asbily.test");
+
+      const missingTracked = listEnv.userVariables.find((v) => v.key === "MISSING_TRACKED_WEBHOOK_URL");
+      assert.ok(missingTracked);
+      assert.equal(missingTracked.configured, false);
+      assert.equal(missingTracked.status, "missing");
+
+      // Verify process.env was never overwritten by vault or tracking operations
+      assert.equal(process.env.ASBILY_DISCOVERY_API_KEY, secretVal);
+      assert.equal(process.env.VERCEL_TEST_SECRET, undefined);
+
+      // Provider-specific runtime detection checks (Vercel, Railway, Render)
+      const prevVercel = process.env.VERCEL;
+      const prevRailway = process.env.RAILWAY_ENVIRONMENT;
+      const prevRender = process.env.RENDER;
+      try {
+        delete process.env.RAILWAY_ENVIRONMENT;
+        delete process.env.RENDER;
+        process.env.VERCEL = "1";
+        assert.equal(detectRuntimeProvider().provider, "vercel");
+
+        delete process.env.VERCEL;
+        process.env.RAILWAY_ENVIRONMENT = "production";
+        assert.equal(detectRuntimeProvider().provider, "railway");
+
+        delete process.env.RAILWAY_ENVIRONMENT;
+        process.env.RENDER = "true";
+        assert.equal(detectRuntimeProvider().provider, "render");
+      } finally {
+        if (prevVercel === undefined) delete process.env.VERCEL;
+        else process.env.VERCEL = prevVercel;
+        if (prevRailway === undefined) delete process.env.RAILWAY_ENVIRONMENT;
+        else process.env.RAILWAY_ENVIRONMENT = prevRailway;
+        if (prevRender === undefined) delete process.env.RENDER;
+        else process.env.RENDER = prevRender;
+      }
+    } finally {
+      if (prevSecret === undefined) delete process.env.ASBILY_DISCOVERY_API_KEY;
+      else process.env.ASBILY_DISCOVERY_API_KEY = prevSecret;
+      if (prevPublic === undefined) delete process.env.ASBILY_DISCOVERY_PUBLIC_URL;
+      else process.env.ASBILY_DISCOVERY_PUBLIC_URL = prevPublic;
+      if (prevRestricted === undefined) delete process.env.CUSTOM_SIGNING_SECRET;
+      else process.env.CUSTOM_SIGNING_SECRET = prevRestricted;
+      if (prevPassword === undefined) delete process.env.ASBILY_ADMIN_PASSWORD;
+      else process.env.ASBILY_ADMIN_PASSWORD = prevPassword;
+    }
   });
 
   await t.test("6. Provider CRUD, live connection test, and idempotent-only fallback", async () => {

@@ -209,6 +209,7 @@ function createInitialState() {
   return {
     providers: buildInitialProviders(),
     envVars: [],
+    trackedEnvVars: [],
     routes: DEFAULT_ROUTES.map((r) => ({ ...r })),
     users,
     metrics: {
@@ -281,6 +282,9 @@ class ControllerStateStore {
         if (Array.isArray(saved.envVars)) {
           this.state.envVars = saved.envVars;
         }
+        if (Array.isArray(saved.trackedEnvVars)) {
+          this.state.trackedEnvVars = saved.trackedEnvVars;
+        }
         if (Array.isArray(saved.routes) && saved.routes.length > 0) {
           this.state.routes = saved.routes;
         }
@@ -309,6 +313,7 @@ class ControllerStateStore {
       const snapshot = {
         providers: this.state.providers,
         envVars: this.state.envVars,
+        trackedEnvVars: this.state.trackedEnvVars,
         routes: this.state.routes,
         users: this.state.users,
         settings: this.state.settings,
