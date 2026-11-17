@@ -1,0 +1,49 @@
+# ==========================================
+# ASBILY CONTROLLER — WRANGLER CONFIG
+# Cloudflare Workers Central API Gateway
+# ==========================================
+
+name = "asbily-controller-gateway"
+main = "src/index.js"
+compatibility_date = "2025-03-01"
+workers_dev = true
+
+[vars]
+ACTIVE_PROVIDER = "vercel"
+DEFAULT_PROVIDER = "vercel"
+DEFAULT_TIMEOUT_MS = "8000"
+RATE_LIMIT_PER_MIN = "120"
+ALLOWED_ORIGINS = ""
+
+# Set non-secret backend URLs in [vars] or via dashboard:
+# VERCEL_BACKEND_URL = "https://your-vercel-backend.vercel.app"
+# RAILWAY_BACKEND_URL = "https://your-railway-backend.up.railway.app"
+# RENDER_BACKEND_URL = "https://your-render-backend.onrender.com"
+
+# Custom Domain Routing (uncomment and configure your zone):
+# routes = [
+#   { pattern = "api.asbily.com/*", zone_name = "asbily.com" }
+# ]
+
+# Optional KV Namespace for dynamic routing config:
+# [[kv_namespaces]]
+# binding = "CONTROLLER_CONFIG"
+# id = "YOUR_KV_NAMESPACE_ID"
+
+# Future Cloudflare R2 Storage Bucket binding:
+# [[r2_buckets]]
+# binding = "ASBILY_STORAGE"
+# bucket_name = "asbily-storage"
+
+# ==========================================
+# REQUIRED CLOUDFLARE SECRETS (never commit!):
+# Run via Wrangler CLI:
+#   npx wrangler secret put GATEWAY_SIGNING_SECRET
+#   npx wrangler secret put GATEWAY_ADMIN_TOKEN
+#   npx wrangler secret put VERCEL_API_KEY
+#   npx wrangler secret put VERCEL_API_SECRET
+#   npx wrangler secret put RAILWAY_API_KEY
+#   npx wrangler secret put RAILWAY_API_SECRET
+#   npx wrangler secret put RENDER_API_KEY
+#   npx wrangler secret put RENDER_API_SECRET
+# ==========================================

@@ -41,6 +41,7 @@
         <a href="#services">Services</a>
         <a href="#apis">APIs</a>
         <a href="#about">About</a>
+        <a href="/dashboard">Dashboard</a>
       </nav>
 
     </div>
@@ -71,8 +72,8 @@
           </p>
 
           <div class="hero-actions">
-            <a href="#overview" class="btn btn-primary">
-              Explore Controller
+            <a href="/dashboard" class="btn btn-primary">
+              Open Controller Dashboard
             </a>
 
             <a href="#services" class="btn btn-secondary">
@@ -102,21 +103,21 @@
         <div class="overview-grid">
 
           <article class="overview-card">
-            <span class="card-label">Platform</span>
-            <h3>Asbily Controller</h3>
-            <p>Central backend and API management.</p>
+            <span class="card-label">API Gateway</span>
+            <h3>Cloudflare Workers</h3>
+            <p>Central routing, auth, rate limiting, and fallback.</p>
           </article>
 
           <article class="overview-card">
             <span class="card-label">Runtime</span>
-            <h3>Node.js</h3>
-            <p>Native Node.js backend architecture.</p>
+            <h3>Node.js 20+</h3>
+            <p>Native ES Module backend architecture.</p>
           </article>
 
           <article class="overview-card">
-            <span class="card-label">Hosting</span>
-            <h3>Vercel</h3>
-            <p>Deployment and serverless API hosting.</p>
+            <span class="card-label">Providers</span>
+            <h3>Vercel · Railway · Render</h3>
+            <p>Multi-provider backend orchestration and health checks.</p>
           </article>
 
         </div>
@@ -139,39 +140,46 @@
 
         <div class="service-grid">
 
-          <a href="/backend/" class="service-card">
+          <a href="/dashboard#providers" class="service-card">
             <span class="service-icon">01</span>
-            <h3>Backend</h3>
-            <p>Backend services and management.</p>
-            <span class="service-link">Explore →</span>
+            <h3>Backend Providers</h3>
+            <p>Manage Vercel, Railway, Render, and custom backends.</p>
+            <span class="service-link">Configure →</span>
           </a>
 
-          <a href="/api/" class="service-card" id="apis">
+          <a href="/dashboard#gateway" class="service-card" id="apis">
             <span class="service-icon">02</span>
-            <h3>Public API</h3>
-            <p>API endpoints and integrations.</p>
+            <h3>API Gateway</h3>
+            <p>Cloudflare Workers routing, rules, and testing.</p>
             <span class="service-link">Explore →</span>
           </a>
 
-          <a href="/firebase/" class="service-card">
+          <a href="/dashboard#firebase" class="service-card">
             <span class="service-icon">03</span>
             <h3>Firebase</h3>
-            <p>Firebase services integration.</p>
-            <span class="service-link">Explore →</span>
+            <p>Firebase services and environment integration.</p>
+            <span class="service-link">Inspect →</span>
           </a>
 
-          <a href="/google-cloud/" class="service-card">
+          <a href="/dashboard#storage" class="service-card">
             <span class="service-icon">04</span>
-            <h3>Google Cloud</h3>
-            <p>Google Cloud service integration.</p>
+            <h3>Cloudflare R2 & Cloud</h3>
+            <p>Object storage and Google Cloud infrastructure.</p>
             <span class="service-link">Explore →</span>
           </a>
 
-          <a href="/api/lemon-squeezy" class="service-card">
+          <a href="/dashboard#payments" class="service-card">
             <span class="service-icon">05</span>
             <h3>Lemon Squeezy</h3>
-            <p>Payment API and webhook integration.</p>
-            <span class="service-link">Explore →</span>
+            <p>Payment API and verified webhook integration.</p>
+            <span class="service-link">Manage →</span>
+          </a>
+
+          <a href="/dashboard#security" class="service-card">
+            <span class="service-icon">06</span>
+            <h3>Security & Secrets</h3>
+            <p>RBAC, rate limits, encrypted vault, and audit logs.</p>
+            <span class="service-link">Review →</span>
           </a>
 
         </div>

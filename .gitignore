@@ -2,9 +2,14 @@
 .env
 .env.*
 !.env.example
+.dev.vars
 
 # Dependencies
 node_modules/
+
+# Controller local runtime state
+data/
+.wrangler/
 
 # Logs
 logs/
