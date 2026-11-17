@@ -29,6 +29,7 @@ coverage/
 # Build output
 dist/
 build/
+public/
 
 # Operating system files
 .DS_Store

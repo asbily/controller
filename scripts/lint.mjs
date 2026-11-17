@@ -7,7 +7,7 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const ROOT = process.cwd();
-const IGNORE_DIRS = new Set(["node_modules", ".git", ".wrangler", "data"]);
+const IGNORE_DIRS = new Set(["node_modules", ".git", ".wrangler", "data", "public"]);
 
 async function collectJsFiles(dir) {
   const entries = await readdir(dir, { withFileTypes: true });

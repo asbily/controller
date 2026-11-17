@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
+  "outputDirectory": "public",
   "rewrites": [
     {
       "source": "/health",
@@ -19,11 +20,27 @@
       "destination": "/api/index"
     },
     {
+      "source": "/dashboard",
+      "destination": "/dashboard/index.html"
+    },
+    {
+      "source": "/backend",
+      "destination": "/dashboard/index.html"
+    },
+    {
       "source": "/backend/(.*)",
       "destination": "/dashboard/index.html"
     },
     {
+      "source": "/firebase",
+      "destination": "/dashboard/index.html"
+    },
+    {
       "source": "/firebase/(.*)",
+      "destination": "/dashboard/index.html"
+    },
+    {
+      "source": "/google-cloud",
       "destination": "/dashboard/index.html"
     },
     {
